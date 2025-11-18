@@ -64,7 +64,7 @@ We have added the following files to enhance vLLM with TinyServe optimizations:
    - Intelligent memory compaction based on block weights
    - Dynamic workload balancing across GPU warps
 
-For detailed information about TinyServe optimizations, see the [TinyServe Kernels Documentation](csrc/tinyserve_kernels.h).
+For detailed information about TinyServe optimizations, see the [TinyServe Kernels Header](csrc/tinyserve_kernels.h).
 
 ---
 
@@ -86,9 +86,7 @@ If you use TinyServe-vLLM for your research, please cite our paper:
 
 ## About
 
-**TinyServe-vLLM** is an enhanced version of vLLM with advanced CUDA kernel optimizations for improved memory management, fragmentation reduction, and query-aware cache selection.
-
-vLLM is a fast and easy-to-use library for LLM inference and serving, originally developed in the [Sky Computing Lab](https://sky.cs.berkeley.edu) at UC Berkeley.
+**TinyServe-vLLM** is an enhanced version of vLLM with advanced CUDA kernel optimizations for improved memory management, fragmentation reduction, and query-aware cache selection. It is developed Dong Liu and Yanxuan Yu at FastLM.ai
 
 ---
 
