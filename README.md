@@ -19,9 +19,9 @@
 - Dynamic workload balancing
 - LRU cache management
 
-### New Files Added by TinyServe-vLLM
+### TinyServe-vLLM Implementation
 
-We have added the following files to enhance vLLM with TinyServe optimizations:
+We have updated/added the following files to enhance vLLM with TinyServe optimizations:
 
 #### Core Kernel Files
 - **`csrc/vllm_kernels.cu`**: Complete CUDA kernel implementation with TinyServe optimizations
