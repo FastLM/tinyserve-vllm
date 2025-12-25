@@ -70,7 +70,7 @@ where:
 
 Multi-constraint optimization for block allocation:
 
-$$\min_{b \in \mathcal{B}} \Bigg\{ \sum_{i=1}^{m} w_i \cdot f_i(b) + \lambda \cdot \|\mathbf{g}(b)\|_2^2 \Bigg\}$$
+$$\min_{b \in \mathcal{B}} \left\lbrace \sum_{i=1}^{m} w_i \cdot f_i(b) + \lambda \cdot \|\mathbf{g}(b)\|_2^2 \right\rbrace$$
 
 subject to constraints:
 
