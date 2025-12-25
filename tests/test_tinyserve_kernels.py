@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
-# SPDX-FileCopyrightText: Copyright contributors to the TinyServe-vLLM project
+# SPDX-FileCopyrightText: Copyright contributors to the vLLM project
 """
 TinyServe Kernels Python Test Suite
 Comprehensive test suite for TinyServe optimized kernels using Python
