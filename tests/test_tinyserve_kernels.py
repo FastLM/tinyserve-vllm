@@ -6,16 +6,18 @@ TinyServe Kernels Python Test Suite
 Comprehensive test suite for TinyServe optimized kernels using Python
 """
 
-import numpy as np
 import ctypes
 import os
 import sys
 import time
 import unittest
-from typing import List, Tuple, Optional, Any
+from typing import Any
+
+import numpy as np
 
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 
 class TinyServePythonTests(unittest.TestCase):
     """Test suite for TinyServe kernels"""
@@ -26,7 +28,7 @@ class TinyServePythonTests(unittest.TestCase):
     head_dim: int
     seq_len: int
     block_size: int
-    tinyserve_lib: Optional[Any]
+    tinyserve_lib: Any | None
     library_available: bool
     
     @classmethod
@@ -41,8 +43,7 @@ class TinyServePythonTests(unittest.TestCase):
         # Try to load TinyServe library
         try:
             lib_path = os.path.join(
-                os.path.dirname(__file__),
-                '../build/libtinyserve_kernels.so'
+                os.path.dirname(__file__), "../build/libtinyserve_kernels.so"
             )
             cls.tinyserve_lib = ctypes.CDLL(lib_path)
             cls.library_available = True
@@ -58,7 +59,7 @@ class TinyServePythonTests(unittest.TestCase):
     
     def generate_test_data(
         self, batch_size: int, seq_len: int, hidden_size: int
-    ) -> Tuple[np.ndarray, ...]:
+    ) -> tuple[np.ndarray, ...]:
         """Generate random test data"""
         queries = self.rng.randn(
             batch_size, self.num_heads, self.head_dim

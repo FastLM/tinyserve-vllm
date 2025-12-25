@@ -6,17 +6,17 @@ TinyServe PagedAttention Example
 Demonstrates the usage of TinyServe's optimized PagedAttention kernels
 """
 
-import numpy as np
 import ctypes
-from ctypes import c_int, c_float, c_void_p, POINTER
 import os
+from ctypes import POINTER, c_float, c_int
+
+import numpy as np
 
 # Load TinyServe library
 try:
     # Try to load the compiled library
     lib_path = os.path.join(
-        os.path.dirname(__file__),
-        '../../build/libtinyserve_kernels.so'
+        os.path.dirname(__file__), "../../build/libtinyserve_kernels.so"
     )
     tinyserve_lib = ctypes.CDLL(lib_path)
     print("✓ TinyServe library loaded successfully")
@@ -24,6 +24,7 @@ except OSError:
     print("⚠ TinyServe library not found. Please compile first with 'make all'")
     print("  This example will run in simulation mode.")
     tinyserve_lib = None
+
 
 class TinyServeExample:
     def __init__(self, batch_size=4, num_heads=8, head_dim=64, seq_len=512):
