@@ -78,7 +78,7 @@ $$\begin{aligned}
 f_1(b) &= F_{frag}(b) = \frac{\text{Var}(\text{free blocks})}{\bar{r}^2} \\
 f_2(b) &= D_{locality}(b) = \sum_{j \in \text{neighbors}} \frac{1}{d(b, j)^2} \\
 f_3(b) &= S_{size}(b) = \left| \frac{\text{requested} - \text{allocated}}{\text{requested}} \right| \\
-f_4(b) &= T_{access}(b) = \sum_{t} \exp(-\alpha t) \cdot \text{access\_count}_t(b)
+f_4(b) &= T_{access}(b) = \sum_{t} \exp(-\alpha t) \cdot \text{accessCount}_{t}(b)
 \end{aligned}$$
 
 with gradient penalty:
