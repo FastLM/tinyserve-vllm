@@ -79,8 +79,10 @@ class TinyServePythonTests(unittest.TestCase):
         """Test data generation"""
         print("\nTesting data generation...")
         
-        queries, key_blocks, value_blocks, seq_lens, block_table = self.generate_test_data(
-            self.batch_size, self.seq_len, self.head_dim
+        queries, key_blocks, value_blocks, seq_lens, block_table = (
+            self.generate_test_data(
+                self.batch_size, self.seq_len, self.head_dim
+            )
         )
         
         # Verify shapes
@@ -109,8 +111,10 @@ class TinyServePythonTests(unittest.TestCase):
         """Test query complexity analysis"""
         print("\nTesting query complexity analysis...")
         
-        queries, _, _, _, _ = self.generate_test_data(
-            self.batch_size, self.seq_len, self.head_dim
+        queries, _, _, _, _ = (
+            self.generate_test_data(
+                self.batch_size, self.seq_len, self.head_dim
+            )
         )
         
         # Simulate query complexity analysis
@@ -185,10 +189,12 @@ class TinyServePythonTests(unittest.TestCase):
                     block_id = i * 4 + j
                     if block_id < num_cache_blocks:
                         selected_cache_blocks[block_id] = 1
-            elif selection_score > cache_threshold * 0.5:
+            elif (
+                selection_score > cache_threshold * 0.5
+                and i < num_cache_blocks
+            ):
                 # Medium priority - allocate single block
-                if i < num_cache_blocks:
-                    selected_cache_blocks[i] = 1
+                selected_cache_blocks[i] = 1
         
         # Verify results
         self.assertTrue(np.all(selected_cache_blocks >= 0))
@@ -202,8 +208,10 @@ class TinyServePythonTests(unittest.TestCase):
         """Test attention computation simulation"""
         print("\nTesting attention computation simulation...")
         
-        queries, key_blocks, value_blocks, seq_lens, block_table = self.generate_test_data(
-            self.batch_size, self.seq_len, self.head_dim
+        queries, key_blocks, value_blocks, seq_lens, block_table = (
+            self.generate_test_data(
+                self.batch_size, self.seq_len, self.head_dim
+            )
         )
         
         # Simulate attention computation
@@ -281,8 +289,10 @@ class TinyServePythonTests(unittest.TestCase):
         num_iterations = 50
         
         # Generate test data
-        queries, key_blocks, value_blocks, seq_lens, block_table = self.generate_test_data(
-            self.batch_size, self.seq_len, self.head_dim
+        queries, key_blocks, value_blocks, seq_lens, block_table = (
+            self.generate_test_data(
+                self.batch_size, self.seq_len, self.head_dim
+            )
         )
         
         # Benchmark simulation
@@ -331,8 +341,10 @@ class TinyServePythonTests(unittest.TestCase):
         print("\nTesting integration workflow...")
         
         # Step 1: Generate test data
-        queries, key_blocks, value_blocks, seq_lens, block_table = self.generate_test_data(
-            self.batch_size, self.seq_len, self.head_dim
+        queries, key_blocks, value_blocks, seq_lens, block_table = (
+            self.generate_test_data(
+                self.batch_size, self.seq_len, self.head_dim
+            )
         )
         
         # Step 2: Query analysis

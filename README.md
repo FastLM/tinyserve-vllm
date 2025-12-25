@@ -2,7 +2,7 @@
 
 **TinyServe-vLLM** is an enhanced version of vLLM with advanced CUDA kernel optimizations for improved memory management, fragmentation reduction, and query-aware cache selection.
 
-### Key TinyServe Optimizations
+## Key TinyServe Optimizations
 
 - **Query-Aware Cache Selection**: Intelligent cache management based on query characteristics and access patterns
 - **Fragmentation Reduction**: Advanced techniques to minimize memory fragmentation (40-60% reduction)
