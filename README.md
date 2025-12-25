@@ -1,4 +1,4 @@
-## TinyServe-vLLM: Optimized vLLM with Advanced Kernel Optimizations
+# TinyServe-vLLM: Optimized vLLM with Advanced Kernel Optimizations
 
 **TinyServe-vLLM** is an enhanced version of vLLM with advanced CUDA kernel optimizations for improved memory management, fragmentation reduction, and query-aware cache selection.
 
@@ -24,25 +24,26 @@
 We have updated/added the following files to enhance vLLM with TinyServe optimizations:
 
 #### Core Kernel Files
-- **`csrc/vllm_kernels.cu`**: Complete CUDA kernel implementation with TinyServe optimizations
-  - Fragmentation detection and analysis kernel
-  - Fragmentation-aware block allocation kernel
-  - Defragmentation kernel
-  - Continuous block allocation (best-fit) kernel
-  - FlashAttention with PagedAttention integration
-  - Advanced block allocation with LRU cache
-  - Intelligent memory compaction
-  - Dynamic workload balancing
 
-- **`csrc/tinyserve_kernels.h`**: Header file for TinyServe kernels
-  - Complete API definitions for all TinyServe optimization kernels
-  - Data structures for block table management
-  - Function declarations for kernel launchers
+    - **`csrc/vllm_kernels.cu`**: Complete CUDA kernel implementation with TinyServe optimizations
+        - Fragmentation detection and analysis kernel
+        - Fragmentation-aware block allocation kernel
+        - Defragmentation kernel
+        - Continuous block allocation (best-fit) kernel
+        - FlashAttention with PagedAttention integration
+        - Advanced block allocation with LRU cache
+        - Intelligent memory compaction
+        - Dynamic workload balancing
 
-- **`csrc/tinyserve_example.cu`**: Example implementation demonstrating TinyServe usage
-  - Complete example showing how to use TinyServe kernels
-  - Performance benchmarking utilities
-  - Memory compaction examples
+    - **`csrc/tinyserve_kernels.h`**: Header file for TinyServe kernels
+        - Complete API definitions for all TinyServe optimization kernels
+        - Data structures for block table management
+        - Function declarations for kernel launchers
+
+    - **`csrc/tinyserve_example.cu`**: Example implementation demonstrating TinyServe usage
+        - Complete example showing how to use TinyServe kernels
+        - Performance benchmarking utilities
+        - Memory compaction examples
 
 #### Key Features Implemented
 
@@ -118,4 +119,5 @@ TinyServe-vLLM seamlessly supports all models compatible with vLLM, including:
 - Mixture-of-Expert LLMs (e.g., Mixtral, Deepseek-V2 and V3)
 - Embedding Models (e.g., E5-Mistral)
 - Multi-modal LLMs (e.g., LLaVA)
+
 ---

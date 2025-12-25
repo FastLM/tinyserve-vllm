@@ -12,7 +12,10 @@ import os
 # Load TinyServe library
 try:
     # Try to load the compiled library
-    lib_path = os.path.join(os.path.dirname(__file__), '../../build/libtinyserve_kernels.so')
+    lib_path = os.path.join(
+        os.path.dirname(__file__),
+        '../../build/libtinyserve_kernels.so'
+    )
     tinyserve_lib = ctypes.CDLL(lib_path)
     print("✓ TinyServe library loaded successfully")
 except OSError:
@@ -45,21 +48,35 @@ class TinyServeExample:
         print("\nGenerating test data...")
         
         # Generate random queries
-        self.queries = np.random.randn(self.batch_size, self.num_heads, self.head_dim).astype(np.float16)
+        self.queries = np.random.randn(
+            self.batch_size, self.num_heads, self.head_dim
+        ).astype(np.float16)
         
         # Generate random key-value blocks
-        self.key_blocks = np.random.randn(self.num_blocks, self.block_size, self.head_dim).astype(np.float16)
-        self.value_blocks = np.random.randn(self.num_blocks, self.block_size, self.head_dim).astype(np.float16)
+        self.key_blocks = np.random.randn(
+            self.num_blocks, self.block_size, self.head_dim
+        ).astype(np.float16)
+        self.value_blocks = np.random.randn(
+            self.num_blocks, self.block_size, self.head_dim
+        ).astype(np.float16)
         
         # Generate sequence lengths
-        self.seq_lens = np.random.randint(100, self.seq_len, size=self.batch_size, dtype=np.int32)
+        self.seq_lens = np.random.randint(
+            100, self.seq_len, size=self.batch_size, dtype=np.int32
+        )
         
         # Generate block table
-        self.block_table = np.random.randint(0, self.num_blocks, 
-                                           size=(self.batch_size, self.num_blocks), dtype=np.int32)
+        self.block_table = np.random.randint(
+            0, self.num_blocks,
+            size=(self.batch_size, self.num_blocks),
+            dtype=np.int32
+        )
         
         # Initialize output
-        self.output = np.zeros((self.batch_size, self.num_heads, self.head_dim), dtype=np.float16)
+        self.output = np.zeros(
+            (self.batch_size, self.num_heads, self.head_dim),
+            dtype=np.float16
+        )
         
         print(f"✓ Generated test data with shapes:")
         print(f"  Queries: {self.queries.shape}")
@@ -75,12 +92,13 @@ class TinyServeExample:
         # Simulate attention computation
         for batch_idx in range(self.batch_size):
             seq_len = self.seq_lens[batch_idx]
-            num_blocks = (seq_len + self.block_size - 1) // self.block_size
             
             for head_idx in range(self.num_heads):
                 # Simulate attention computation
                 attention_scores = np.random.randn(seq_len).astype(np.float32)
-                attention_weights = np.softmax(attention_scores)
+                # Manual softmax implementation
+                exp_scores = np.exp(attention_scores - np.max(attention_scores))
+                attention_weights = exp_scores / np.sum(exp_scores)
                 
                 # Simulate output computation
                 for d in range(self.head_dim):
@@ -193,7 +211,7 @@ def main():
     example.generate_test_data()
     
     # Run kernels
-    output = example.run_tinyserve_kernels()
+    example.run_tinyserve_kernels()
     
     # Analyze results
     example.analyze_results()

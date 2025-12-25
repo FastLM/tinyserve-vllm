@@ -10,7 +10,7 @@ import os
 import sys
 import time
 import unittest
-from typing import List, Tuple
+from typing import List, Tuple, Optional, Any
 
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -18,8 +18,17 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 class TinyServePythonTests(unittest.TestCase):
     """Test suite for TinyServe kernels"""
     
+    # Class attributes for type checking
+    batch_size: int
+    num_heads: int
+    head_dim: int
+    seq_len: int
+    block_size: int
+    tinyserve_lib: Optional[Any]
+    library_available: bool
+    
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         """Set up test class"""
         cls.batch_size = 4
         cls.num_heads = 8
@@ -29,7 +38,10 @@ class TinyServePythonTests(unittest.TestCase):
         
         # Try to load TinyServe library
         try:
-            lib_path = os.path.join(os.path.dirname(__file__), '../build/libtinyserve_kernels.so')
+            lib_path = os.path.join(
+                os.path.dirname(__file__),
+                '../build/libtinyserve_kernels.so'
+            )
             cls.tinyserve_lib = ctypes.CDLL(lib_path)
             cls.library_available = True
             print("✓ TinyServe library loaded successfully")
@@ -42,13 +54,24 @@ class TinyServePythonTests(unittest.TestCase):
         """Set up each test"""
         self.rng = np.random.RandomState(42)  # Fixed seed for reproducibility
     
-    def generate_test_data(self, batch_size: int, seq_len: int, hidden_size: int) -> Tuple[np.ndarray, ...]:
+    def generate_test_data(
+        self, batch_size: int, seq_len: int, hidden_size: int
+    ) -> Tuple[np.ndarray, ...]:
         """Generate random test data"""
-        queries = self.rng.randn(batch_size, self.num_heads, self.head_dim).astype(np.float16)
-        key_blocks = self.rng.randn(seq_len, self.head_dim).astype(np.float16)
-        value_blocks = self.rng.randn(seq_len, self.head_dim).astype(np.float16)
+        queries = self.rng.randn(
+            batch_size, self.num_heads, self.head_dim
+        ).astype(np.float16)
+        key_blocks = self.rng.randn(
+            seq_len, self.head_dim
+        ).astype(np.float16)
+        value_blocks = self.rng.randn(
+            seq_len, self.head_dim
+        ).astype(np.float16)
         seq_lens = np.full(batch_size, seq_len, dtype=np.int32)
-        block_table = np.arange(batch_size * (seq_len // self.block_size)).reshape(batch_size, -1).astype(np.int32)
+        num_blocks = batch_size * (seq_len // self.block_size)
+        block_table = np.arange(num_blocks).reshape(
+            batch_size, -1
+        ).astype(np.int32)
         
         return queries, key_blocks, value_blocks, seq_lens, block_table
     
@@ -61,11 +84,17 @@ class TinyServePythonTests(unittest.TestCase):
         )
         
         # Verify shapes
-        self.assertEqual(queries.shape, (self.batch_size, self.num_heads, self.head_dim))
+        self.assertEqual(
+            queries.shape,
+            (self.batch_size, self.num_heads, self.head_dim)
+        )
         self.assertEqual(key_blocks.shape, (self.seq_len, self.head_dim))
         self.assertEqual(value_blocks.shape, (self.seq_len, self.head_dim))
         self.assertEqual(seq_lens.shape, (self.batch_size,))
-        self.assertEqual(block_table.shape, (self.batch_size, self.seq_len // self.block_size))
+        expected_blocks = self.seq_len // self.block_size
+        self.assertEqual(
+            block_table.shape, (self.batch_size, expected_blocks)
+        )
         
         # Verify data types
         self.assertEqual(queries.dtype, np.float16)
@@ -80,7 +109,9 @@ class TinyServePythonTests(unittest.TestCase):
         """Test query complexity analysis"""
         print("\nTesting query complexity analysis...")
         
-        queries, _, _, _, _ = self.generate_test_data(self.batch_size, self.seq_len, self.head_dim)
+        queries, _, _, _, _ = self.generate_test_data(
+            self.batch_size, self.seq_len, self.head_dim
+        )
         
         # Simulate query complexity analysis
         query_complexity = np.zeros(self.batch_size * self.seq_len, dtype=np.float32)
@@ -110,7 +141,8 @@ class TinyServePythonTests(unittest.TestCase):
         
         # Check that we have some variation
         self.assertTrue(np.std(query_complexity) > 0)
-        self.assertTrue(len(np.unique(cache_requirements)) > 1)
+        unique_reqs = np.unique(cache_requirements)
+        self.assertTrue(len(unique_reqs) > 1)
         
         print("✓ Query complexity analysis test passed")
     
@@ -119,9 +151,16 @@ class TinyServePythonTests(unittest.TestCase):
         print("\nTesting cache selection strategy...")
         
         # Generate test data
-        query_complexity = self.rng.uniform(0, 1, self.batch_size * self.seq_len).astype(np.float32)
-        cache_requirements = self.rng.randint(0, 3, self.batch_size * self.seq_len).astype(np.int32)
-        access_history = self.rng.randint(0, 100, self.batch_size * self.seq_len).astype(np.int32)
+        num_elements = self.batch_size * self.seq_len
+        query_complexity = self.rng.uniform(0, 1, num_elements).astype(
+            np.float32
+        )
+        cache_requirements = self.rng.randint(0, 3, num_elements).astype(
+            np.int32
+        )
+        access_history = self.rng.randint(0, 100, num_elements).astype(
+            np.int32
+        )
         
         num_cache_blocks = 256
         cache_threshold = 0.5
@@ -134,7 +173,11 @@ class TinyServePythonTests(unittest.TestCase):
             history = access_history[i]
             
             # Calculate selection score
-            selection_score = complexity * 0.4 + requirement * 0.3 + (history / 100.0) * 0.3
+            selection_score = (
+                complexity * 0.4
+                + requirement * 0.3
+                + (history / 100.0) * 0.3
+            )
             
             if selection_score > cache_threshold:
                 # High priority - allocate multiple blocks
@@ -150,7 +193,8 @@ class TinyServePythonTests(unittest.TestCase):
         # Verify results
         self.assertTrue(np.all(selected_cache_blocks >= 0))
         self.assertTrue(np.all(selected_cache_blocks <= 1))
-        self.assertTrue(np.sum(selected_cache_blocks) > 0)  # Some blocks should be selected
+        # Some blocks should be selected
+        self.assertTrue(np.sum(selected_cache_blocks) > 0)
         
         print("✓ Cache selection strategy test passed")
     
@@ -163,7 +207,10 @@ class TinyServePythonTests(unittest.TestCase):
         )
         
         # Simulate attention computation
-        output = np.zeros((self.batch_size, self.num_heads, self.head_dim), dtype=np.float16)
+        output = np.zeros(
+            (self.batch_size, self.num_heads, self.head_dim),
+            dtype=np.float16
+        )
         
         for batch_idx in range(self.batch_size):
             seq_len = seq_lens[batch_idx]
@@ -181,7 +228,10 @@ class TinyServePythonTests(unittest.TestCase):
                     )
         
         # Verify results
-        self.assertEqual(output.shape, (self.batch_size, self.num_heads, self.head_dim))
+        self.assertEqual(
+            output.shape,
+            (self.batch_size, self.num_heads, self.head_dim)
+        )
         self.assertEqual(output.dtype, np.float16)
         
         # Check for valid values
@@ -199,7 +249,9 @@ class TinyServePythonTests(unittest.TestCase):
         hidden_size = 64
         
         # Generate test data
-        blocks = self.rng.randn(num_blocks, block_size, hidden_size).astype(np.float16)
+        blocks = self.rng.randn(
+            num_blocks, block_size, hidden_size
+        ).astype(np.float16)
         old_to_new_mapping = np.arange(num_blocks) // 2  # Compact by half
         block_weights = self.rng.randint(0, 10, num_blocks)
         compaction_threshold = 5
@@ -238,7 +290,10 @@ class TinyServePythonTests(unittest.TestCase):
         
         for i in range(num_iterations):
             # Simulate attention computation
-            output = np.zeros((self.batch_size, self.num_heads, self.head_dim), dtype=np.float16)
+            output = np.zeros(
+                (self.batch_size, self.num_heads, self.head_dim),
+                dtype=np.float16
+            )
             
             for batch_idx in range(self.batch_size):
                 for head_idx in range(self.num_heads):
@@ -246,8 +301,11 @@ class TinyServePythonTests(unittest.TestCase):
                     attention_weights = self.softmax(attention_scores)
                     
                     for d in range(self.head_dim):
+                        rand_vals = self.rng.randn(self.seq_len).astype(
+                            np.float16
+                        )
                         output[batch_idx, head_idx, d] = np.sum(
-                            attention_weights * self.rng.randn(self.seq_len).astype(np.float16)
+                            attention_weights * rand_vals
                         )
         
         end_time = time.time()
@@ -263,7 +321,8 @@ class TinyServePythonTests(unittest.TestCase):
         
         # Verify reasonable performance
         self.assertLess(avg_time, 1.0)  # Should be less than 1 second per iteration
-        self.assertGreater(throughput, 1.0)  # Should be more than 1 iteration per second
+        # Should be more than 1 iteration per second
+        self.assertGreater(throughput, 1.0)
         
         print("✓ Performance benchmark test passed")
     
@@ -312,7 +371,10 @@ class TinyServePythonTests(unittest.TestCase):
                         selected_cache_blocks[block_id] = 1
         
         # Step 4: Attention computation
-        output = np.zeros((self.batch_size, self.num_heads, self.head_dim), dtype=np.float16)
+        output = np.zeros(
+            (self.batch_size, self.num_heads, self.head_dim),
+            dtype=np.float16
+        )
         
         for batch_idx in range(self.batch_size):
             for head_idx in range(self.num_heads):
@@ -320,8 +382,11 @@ class TinyServePythonTests(unittest.TestCase):
                 attention_weights = self.softmax(attention_scores)
                 
                 for d in range(self.head_dim):
+                    rand_vals = self.rng.randn(self.seq_len).astype(
+                        np.float16
+                    )
                     output[batch_idx, head_idx, d] = np.sum(
-                        attention_weights * self.rng.randn(self.seq_len).astype(np.float16)
+                        attention_weights * rand_vals
                     )
         
         # Verify complete workflow
