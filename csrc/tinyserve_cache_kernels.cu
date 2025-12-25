@@ -3,6 +3,9 @@
  * This file integrates TinyServe optimization kernels with vLLM's cache system
  */
 
+// Only compile for CUDA builds, not CPU or ROCm
+#if !defined(USE_ROCM) && !defined(__HIPCC__) && defined(__CUDACC__)
+
 #include <torch/all.h>
 #include <ATen/cuda/CUDAContext.h>
 #include <c10/cuda/CUDAGuard.h>
@@ -264,3 +267,5 @@ void tinyserve_continuous_block_allocation(
   cudaFree(d_block_priority);
   cudaFree(d_block_weights);
 }
+
+#endif  // !USE_ROCM && !__HIPCC__ && __CUDACC__
