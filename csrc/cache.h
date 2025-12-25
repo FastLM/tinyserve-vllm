@@ -74,42 +74,28 @@ void cp_gather_indexer_k_quant_cache(
     const torch::Tensor& cu_seq_lens);  // [batch_size + 1]
 
 // TinyServe Optimization Functions
-void tinyserve_fragmentation_analysis(
-    torch::Tensor& block_table,
-    torch::Tensor& fragmentation_scores,
-    torch::Tensor& free_block_runs,
-    torch::Tensor& free_block_run_lengths,
-    torch::Tensor& num_free_runs,
-    int total_blocks,
-    int block_size);
+void tinyserve_fragmentation_analysis(torch::Tensor& block_table,
+                                      torch::Tensor& fragmentation_scores,
+                                      torch::Tensor& free_block_runs,
+                                      torch::Tensor& free_block_run_lengths,
+                                      torch::Tensor& num_free_runs,
+                                      int total_blocks, int block_size);
 
 void tinyserve_fragmentation_aware_allocation(
-    torch::Tensor& block_table,
-    torch::Tensor& seq_ids,
-    torch::Tensor& logical_block_ids,
-    torch::Tensor& num_blocks_needed,
-    torch::Tensor& allocated_blocks,
-    torch::Tensor& fragmentation_scores,
-    torch::Tensor& free_block_runs,
-    torch::Tensor& free_block_run_lengths,
-    torch::Tensor& num_free_runs,
-    int total_blocks,
-    int block_size);
+    torch::Tensor& block_table, torch::Tensor& seq_ids,
+    torch::Tensor& logical_block_ids, torch::Tensor& num_blocks_needed,
+    torch::Tensor& allocated_blocks, torch::Tensor& fragmentation_scores,
+    torch::Tensor& free_block_runs, torch::Tensor& free_block_run_lengths,
+    torch::Tensor& num_free_runs, int total_blocks, int block_size);
 
-void tinyserve_defragmentation(
-    torch::Tensor& key_cache,
-    torch::Tensor& value_cache,
-    torch::Tensor& block_table,
-    torch::Tensor& block_mapping,
-    torch::Tensor& blocks_to_move,
-    int block_size,
-    int head_dim);
+void tinyserve_defragmentation(torch::Tensor& key_cache,
+                               torch::Tensor& value_cache,
+                               torch::Tensor& block_table,
+                               torch::Tensor& block_mapping,
+                               torch::Tensor& blocks_to_move, int block_size,
+                               int head_dim);
 
 void tinyserve_continuous_block_allocation(
-    torch::Tensor& block_table,
-    torch::Tensor& seq_ids,
-    torch::Tensor& logical_block_ids,
-    torch::Tensor& num_consecutive_blocks,
-    torch::Tensor& allocated_block_ranges,
-    int total_blocks,
-    int block_size);
+    torch::Tensor& block_table, torch::Tensor& seq_ids,
+    torch::Tensor& logical_block_ids, torch::Tensor& num_consecutive_blocks,
+    torch::Tensor& allocated_block_ranges, int total_blocks, int block_size);
