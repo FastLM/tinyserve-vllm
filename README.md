@@ -74,12 +74,12 @@ $$\min_{b \in \mathcal{B}} \left\{ \sum_{i=1}^{m} w_i \cdot f_i(b) + \lambda \cd
 
 subject to constraints:
 
-$$\begin{align}
-f_1(b) &= F_{frag}(b) = \frac{\text{Var}(\text{free\_blocks})}{\bar{r}^2} \\
+$$\begin{aligned}
+f_1(b) &= F_{frag}(b) = \frac{\text{Var}(\text{free blocks})}{\bar{r}^2} \\
 f_2(b) &= D_{locality}(b) = \sum_{j \in \text{neighbors}} \frac{1}{d(b, j)^2} \\
 f_3(b) &= S_{size}(b) = \left| \frac{\text{requested} - \text{allocated}}{\text{requested}} \right| \\
 f_4(b) &= T_{access}(b) = \sum_{t} \exp(-\alpha t) \cdot \text{access\_count}_t(b)
-\end{align}$$
+\end{aligned}$$
 
 with gradient penalty:
 
