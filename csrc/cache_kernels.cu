@@ -1294,5 +1294,8 @@ void cp_gather_indexer_k_quant_cache(
   }
 }
 
-// Include TinyServe cache optimization kernels
+// Include TinyServe cache optimization kernels (CUDA only)
+// cache_kernels.cu is only compiled for CUDA/ROCm builds, not CPU
+#ifndef USE_ROCM
 #include "tinyserve_cache_kernels.cu"
+#endif

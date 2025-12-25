@@ -747,7 +747,9 @@ TORCH_LIBRARY_EXPAND(CONCAT(TORCH_EXTENSION_NAME, _cache_ops), cache_ops) {
   cache_ops.impl("cp_gather_indexer_k_quant_cache", torch::kCUDA,
                  &cp_gather_indexer_k_quant_cache);
 
-  // TinyServe Optimization Functions
+// TinyServe Optimization Functions (CUDA only)
+// Only register if CUDA is available (check if not ROCm and CUDA headers available)
+#if !defined(USE_ROCM) && !defined(__HIPCC__)
   cache_ops.def(
       "tinyserve_fragmentation_analysis(Tensor! block_table, Tensor! fragmentation_scores, "
       "Tensor! free_block_runs, Tensor! free_block_run_lengths, Tensor! num_free_runs, "
@@ -775,6 +777,7 @@ TORCH_LIBRARY_EXPAND(CONCAT(TORCH_EXTENSION_NAME, _cache_ops), cache_ops) {
       "int total_blocks, int block_size) -> ()");
   cache_ops.impl("tinyserve_continuous_block_allocation", torch::kCUDA,
                  &tinyserve_continuous_block_allocation);
+#endif  // !USE_ROCM
 }
 
 TORCH_LIBRARY_EXPAND(CONCAT(TORCH_EXTENSION_NAME, _cuda_utils), cuda_utils) {
