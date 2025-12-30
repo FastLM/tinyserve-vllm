@@ -1,0 +1,44 @@
+// Add this in csrc/torch_bindings.cpp, inside the TORCH_LIBRARY block
+// Place it after the cp_gather_indexer_k_quant_cache registration (around line 749)
+
+// TinyServe Optimization Functions (CUDA only)
+// Only register if CUDA is available (check if not ROCm and CUDA headers available)
+#if !defined(USE_ROCM) && !defined(__HIPCC__)
+  cache_ops.def(
+      "tinyserve_fragmentation_analysis(Tensor! block_table, Tensor! "
+      "fragmentation_scores, "
+      "Tensor! free_block_runs, Tensor! free_block_run_lengths, Tensor! "
+      "num_free_runs, "
+      "int total_blocks, int block_size) -> ()");
+  cache_ops.impl("tinyserve_fragmentation_analysis", torch::kCUDA,
+                 &tinyserve_fragmentation_analysis);
+
+  cache_ops.def(
+      "tinyserve_fragmentation_aware_allocation(Tensor! block_table, Tensor "
+      "seq_ids, "
+      "Tensor logical_block_ids, Tensor num_blocks_needed, Tensor! "
+      "allocated_blocks, "
+      "Tensor fragmentation_scores, Tensor free_block_runs, Tensor "
+      "free_block_run_lengths, "
+      "Tensor num_free_runs, int total_blocks, int block_size) -> ()");
+  cache_ops.impl("tinyserve_fragmentation_aware_allocation", torch::kCUDA,
+                 &tinyserve_fragmentation_aware_allocation);
+
+  cache_ops.def(
+      "tinyserve_defragmentation(Tensor! key_cache, Tensor! value_cache, "
+      "Tensor! block_table, "
+      "Tensor block_mapping, Tensor blocks_to_move, int block_size, int "
+      "head_dim) -> ()");
+  cache_ops.impl("tinyserve_defragmentation", torch::kCUDA,
+                 &tinyserve_defragmentation);
+
+  cache_ops.def(
+      "tinyserve_continuous_block_allocation(Tensor! block_table, Tensor "
+      "seq_ids, "
+      "Tensor logical_block_ids, Tensor num_consecutive_blocks, Tensor! "
+      "allocated_block_ranges, "
+      "int total_blocks, int block_size) -> ()");
+  cache_ops.impl("tinyserve_continuous_block_allocation", torch::kCUDA,
+                 &tinyserve_continuous_block_allocation);
+#endif  // !USE_ROCM
+

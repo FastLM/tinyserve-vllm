@@ -1,0 +1,8 @@
+// Add this to the end of csrc/cache_kernels.cu (after the last function)
+
+// Include TinyServe cache optimization kernels (CUDA only)
+// cache_kernels.cu is only compiled for CUDA/ROCm builds, not CPU
+#ifndef USE_ROCM
+#include "tinyserve_cache_kernels.cu"
+#endif
+

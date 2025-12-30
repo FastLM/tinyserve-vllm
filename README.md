@@ -92,7 +92,7 @@ where:
 
 ## Integration Guide
 
-### Modified Files in vLLM
+<!-- ### Modified Files in vLLM
 
 The following files need to be modified or added to integrate TinyServe into vLLM:
 
@@ -102,38 +102,29 @@ The following files need to be modified or added to integrate TinyServe into vLL
 | `csrc/tinyserve_kernels.h` | **New** | Header file with kernel function declarations |
 | `csrc/cache.h` | **Modified** | Added TinyServe function declarations |
 | `csrc/cache_kernels.cu` | **Modified** | Includes `tinyserve_cache_kernels.cu` |
-| `csrc/torch_bindings.cpp` | **Modified** | Registers TinyServe functions with PyTorch |
+| `csrc/torch_bindings.cpp` | **Modified** | Registers TinyServe functions with PyTorch | -->
 
 ### Step-by-Step Integration
 
 1. **Copy TinyServe files to vLLM:**
    ```bash
-   # Copy new files
-   cp csrc/tinyserve_cache_kernels.cu <vllm_root>/csrc/
-   cp csrc/tinyserve_kernels.h <vllm_root>/csrc/
+   cd <vllm_root>
+   cp csrc/tinyserve_cache_kernels.cu csrc/
+   cp csrc/tinyserve_kernels.h csrc/
    ```
 
-2. **Modify `csrc/cache.h`:**
-   - Add the TinyServe function declarations (lines 76-101) to the end of the file
+2. **Apply modifications to vLLM files:**
+   - **`csrc/cache.h`**: Add the content from `patches/cache.h.patch` to the end of the file
+   - **`csrc/cache_kernels.cu`**: Add the content from `patches/cache_kernels.cu.patch` to the end of the file
+   - **`csrc/torch_bindings.cpp`**: Add the content from `patches/torch_bindings.cpp.patch` inside the `TORCH_LIBRARY` block (after `cp_gather_indexer_k_quant_cache` registration)
 
-3. **Modify `csrc/cache_kernels.cu`:**
-   - Add the include statement at the end of the file (around line 1300):
-   ```cpp
-   // Include TinyServe cache optimization kernels (CUDA only)
-   #ifndef USE_ROCM
-   #include "tinyserve_cache_kernels.cu"
-   #endif
-   ```
-
-4. **Modify `csrc/torch_bindings.cpp`:**
-   - Add TinyServe function registrations (lines 750-790) in the `TORCH_LIBRARY` block
-   - Ensure the registrations are wrapped with `#if !defined(USE_ROCM) && !defined(__HIPCC__)`
-
-5. **Rebuild vLLM:**
+3. **Rebuild vLLM:**
    ```bash
    cd <vllm_root>
    pip install -e . --no-build-isolation
    ```
+
+**Note**: The patch files contain only the modifications needed. Simply copy the content from each patch file to the corresponding location in the vLLM source code.
 
 | Feature | Status | Description |
 |---------|--------|-------------|
