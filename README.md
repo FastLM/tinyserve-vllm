@@ -90,14 +90,50 @@ where:
 - $w_i$: feature weights, $\lambda$: regularization coefficient
 - $d(b, j)$: distance between blocks, $\alpha$: temporal decay
 
-## Implementation
+## Integration Guide
 
-| Component | File | Description |
-|-----------|------|-------------|
-| Kernels | `csrc/vllm_kernels.cu` | CUDA kernel implementation |
-| API | `csrc/tinyserve_kernels.h` | Kernel API definitions |
-| Cache | `csrc/tinyserve_cache_kernels.cu` | Cache optimization kernels |
-| Bindings | `csrc/torch_bindings.cpp` | PyTorch bindings |
+### Modified Files in vLLM
+
+The following files need to be modified or added to integrate TinyServe into vLLM:
+
+| File | Type | Description |
+|------|------|-------------|
+| `csrc/tinyserve_cache_kernels.cu` | **New** | Core CUDA kernels for cache optimizations |
+| `csrc/tinyserve_kernels.h` | **New** | Header file with kernel function declarations |
+| `csrc/cache.h` | **Modified** | Added TinyServe function declarations |
+| `csrc/cache_kernels.cu` | **Modified** | Includes `tinyserve_cache_kernels.cu` |
+| `csrc/torch_bindings.cpp` | **Modified** | Registers TinyServe functions with PyTorch |
+
+### Step-by-Step Integration
+
+1. **Copy TinyServe files to vLLM:**
+   ```bash
+   # Copy new files
+   cp csrc/tinyserve_cache_kernels.cu <vllm_root>/csrc/
+   cp csrc/tinyserve_kernels.h <vllm_root>/csrc/
+   ```
+
+2. **Modify `csrc/cache.h`:**
+   - Add the TinyServe function declarations (lines 76-101) to the end of the file
+
+3. **Modify `csrc/cache_kernels.cu`:**
+   - Add the include statement at the end of the file (around line 1300):
+   ```cpp
+   // Include TinyServe cache optimization kernels (CUDA only)
+   #ifndef USE_ROCM
+   #include "tinyserve_cache_kernels.cu"
+   #endif
+   ```
+
+4. **Modify `csrc/torch_bindings.cpp`:**
+   - Add TinyServe function registrations (lines 750-790) in the `TORCH_LIBRARY` block
+   - Ensure the registrations are wrapped with `#if !defined(USE_ROCM) && !defined(__HIPCC__)`
+
+5. **Rebuild vLLM:**
+   ```bash
+   cd <vllm_root>
+   pip install -e . --no-build-isolation
+   ```
 
 | Feature | Status | Description |
 |---------|--------|-------------|
@@ -107,6 +143,64 @@ where:
 | Continuous Allocation | ✅ | Allocates consecutive blocks efficiently |
 | Workload Balancing | ✅ | Dynamic balancing across GPU warps |
 | LRU Cache | ✅ | Least Recently Used cache management |
+
+## Running Experiments
+
+### Prerequisites
+
+- CUDA 11.8+ and compatible GPU
+- Python 3.8+
+- PyTorch 2.0+
+- vLLM installed with TinyServe modifications
+
+### Basic Usage
+
+After integration, TinyServe optimizations are automatically enabled. The cache operations will use TinyServe's optimized kernels when available.
+
+### Benchmarking
+
+To compare performance with baseline vLLM:
+
+```bash
+# Run baseline vLLM
+python -m vllm.entrypoints.api_server \
+    --model <model_name> \
+    --tensor-parallel-size 1
+
+# Run TinyServe-enhanced vLLM (same command, optimizations are automatic)
+python -m vllm.entrypoints.api_server \
+    --model <model_name> \
+    --tensor-parallel-size 1
+```
+
+### Monitoring Cache Performance
+
+TinyServe provides enhanced cache metrics. Monitor memory utilization and fragmentation through vLLM's existing monitoring tools. The optimizations work transparently with vLLM's cache management system.
+
+### Experimental Setup
+
+For reproducible experiments:
+
+1. **Environment Setup:**
+   ```bash
+   # Install dependencies
+   pip install -r requirements.txt
+   pip install -e . --no-build-isolation
+   ```
+
+2. **Run Benchmarks:**
+   ```bash
+   # Throughput benchmark
+   python benchmarks/benchmark_throughput.py --model <model_name>
+   
+   # Latency benchmark
+   python benchmarks/benchmark_latency.py --model <model_name>
+   ```
+
+3. **Compare Results:**
+   - Memory utilization: Check GPU memory usage with `nvidia-smi`
+   - Throughput: Compare requests/second
+   - Latency: Compare P50/P99 latencies
 
 ## Performance
 
