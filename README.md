@@ -203,4 +203,4 @@ For reproducible experiments:
 
 ## About
 
-Developed by Dong Liu and Yanxuan Yu at [FastLM.ai](https://github.com/FastLM/)
+Developed by [Dong Liu](https://github.com/NoakLiu/) and [Yanxuan Yu](https://github.com/zorinayu/) at [FastLM.ai](https://github.com/FastLM/)
