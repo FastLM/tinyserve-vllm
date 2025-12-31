@@ -126,15 +126,6 @@ The following files need to be modified or added to integrate TinyServe into vLL
 
 **Note**: The patch files contain only the modifications needed. Simply copy the content from each patch file to the corresponding location in the vLLM source code.
 
-<!-- | Feature | Status | Description |
-|---------|--------|-------------|
-| Fragmentation Analysis | ✅ | Detects and quantifies memory fragmentation |
-| Fragmentation-Aware Allocation | ✅ | Best-fit strategy to minimize fragmentation |
-| Defragmentation | ✅ | Moves blocks to consolidate free space |
-| Continuous Allocation | ✅ | Allocates consecutive blocks efficiently |
-| Workload Balancing | ✅ | Dynamic balancing across GPU warps |
-| LRU Cache | ✅ | Least Recently Used cache management | -->
-
 ## Running Experiments
 
 ### Prerequisites
@@ -216,4 +207,4 @@ For reproducible experiments:
 
 ## About
 
-Developed by Dong Liu and Yanxuan Yu at FastLM.ai
+Developed by Dong Liu and Yanxuan Yu at [FastLM](https://github.com/FastLM/)
