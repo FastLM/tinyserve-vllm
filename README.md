@@ -92,17 +92,13 @@ where:
 
 ## Integration Guide
 
-<!-- ### Modified Files in vLLM
+### Modified Files in vLLM
 
-The following files need to be modified or added to integrate TinyServe into vLLM:
-
-| File | Type | Description |
-|------|------|-------------|
-| `csrc/tinyserve_cache_kernels.cu` | **New** | Core CUDA kernels for cache optimizations |
-| `csrc/tinyserve_kernels.h` | **New** | Header file with kernel function declarations |
-| `csrc/cache.h` | **Modified** | Added TinyServe function declarations |
-| `csrc/cache_kernels.cu` | **Modified** | Includes `tinyserve_cache_kernels.cu` |
-| `csrc/torch_bindings.cpp` | **Modified** | Registers TinyServe functions with PyTorch | -->
+- `csrc/tinyserve_cache_kernels.cu`
+- `csrc/tinyserve_kernels.h`
+- `csrc/cache.h`
+- `csrc/cache_kernels.cu`
+- `csrc/torch_bindings.cpp`
 
 ### Step-by-Step Integration
 
@@ -207,4 +203,4 @@ For reproducible experiments:
 
 ## About
 
-Developed by Dong Liu and Yanxuan Yu at [FastLM](https://github.com/FastLM/)
+Developed by Dong Liu and Yanxuan Yu at [FastLM.ai](https://github.com/FastLM/)
