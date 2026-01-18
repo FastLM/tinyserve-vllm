@@ -2,7 +2,7 @@
 
 Enhanced vLLM with advanced CUDA kernel optimizations for memory management, fragmentation reduction, and query-aware cache selection.
 
-## Key Optimizations
+<!-- ## Key Optimizations
 
 | Optimization | Improvement | Description |
 |-------------|-------------|-------------|
@@ -10,7 +10,7 @@ Enhanced vLLM with advanced CUDA kernel optimizations for memory management, fra
 | Fragmentation Reduction | 40-60% reduction | Advanced techniques to minimize memory fragmentation |
 | Best-Fit Allocation | 20-30% space saved | Optimized block allocation strategies |
 | Memory Utilization | >96% (vs 60-80%) | Efficient memory usage with continuous block allocation |
-| FlashAttention Integration | 2-3x speedup | Combined FlashAttention with PagedAttention |
+| FlashAttention Integration | 2-3x speedup | Combined FlashAttention with PagedAttention | -->
 
 ## Core Algorithms
 
@@ -180,14 +180,14 @@ For reproducible experiments:
    - Throughput: Compare requests/second
    - Latency: Compare P50/P99 latencies
 
-## Performance
+<!-- ## Performance
 
 | Metric | Baseline | TinyServe-vLLM | Improvement |
 |--------|----------|----------------|-------------|
 | Memory Utilization | 60-80% | >96% | +20-36% |
 | Fragmentation | High | Low | -40-60% |
 | Throughput | 1x | 1.3-1.5x | +30-50% |
-| Allocation Efficiency | 70-80% | 90-95% | +20-25% |
+| Allocation Efficiency | 70-80% | 90-95% | +20-25% | -->
 
 ## Citation
 
