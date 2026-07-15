@@ -192,7 +192,7 @@ For reproducible experiments:
 ## Citation
 
 ```bibtex
-@inproceedings{10.1145/3746027.3758181,
+@inproceedings{liu_tinyserve_2025,
    author = {Liu, Dong and Yu, Yanxuan},
    title = {TinyServe: Query-Aware Cache Selection for Efficient LLM Serving},
    year = {2025},
