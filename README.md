@@ -192,12 +192,22 @@ For reproducible experiments:
 ## Citation
 
 ```bibtex
-@inproceedings{liu2025tinyserve,
-  title={TinyServe: Query-Aware Cache Selection for Efficient LLM Serving},
-  author={Liu, Dong and Yu, Yanxuan},
-  booktitle={Proceedings of the 33rd ACM International Conference on Multimedia},
-  pages={12529--12537},
-  year={2025}
+@inproceedings{10.1145/3746027.3758181,
+   author = {Liu, Dong and Yu, Yanxuan},
+   title = {TinyServe: Query-Aware Cache Selection for Efficient LLM Serving},
+   year = {2025},
+   isbn = {9798400720352},
+   publisher = {Association for Computing Machinery},
+   address = {New York, NY, USA},
+   url = {https://doi.org/10.1145/3746027.3758181},
+   doi = {10.1145/3746027.3758181},
+   abstract = {Serving large language models (LLMs) efficiently remains challenging due to the high memory and latency overhead of key-value (KV) cache access during autoregressive decoding. We present TinyServe, a lightweight and extensible serving system for deploying tiny LLMs (e.g., TinyLLaMA, GPT2-345M) with support for structured KV sparsity, plugin-based token selection, and hardware-efficient attention kernels. Unlike prior simulation frameworks, TinyServe executes real-time decoding with configurable sparsity strategies and fine-grained instrumentation. To reduce decoding cost, we introduce a query-aware page selection mechanism that leverages bounding-box metadata to estimate attention relevance between the query and KV cache blocks. This enables selective KV loading with minimal overhead and no model modifications. Our fused CUDA kernel integrates page scoring, sparse memory access, and masked attention in a single pass. Experiments show that TinyServe achieves up to 3.4\texttimes{} speedup and over 2\texttimes{} memory savings with negligible accuracy drop. Additional analysis of cache reuse, page hit rate, and multi-GPU scaling confirms its practicality as an efficient system-level design for LLM training and inference research on resource-constrained hardware.},
+   booktitle = {Proceedings of the 33rd ACM International Conference on Multimedia},
+   pages = {12529–12537},
+   numpages = {9},
+   keywords = {cuda kernels, efficient inference, efficient training, kv cache, llm serving, runtime systems, sparsity},
+   location = {Dublin, Ireland},
+   series = {MM '25}
 }
 ```
 
