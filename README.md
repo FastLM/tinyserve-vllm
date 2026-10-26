@@ -1,216 +1,136 @@
-# TinyServe-vLLM
+# TinyServe: Query-Aware Cache Selection for Efficient LLM Serving
 
-Enhanced vLLM with advanced CUDA kernel optimizations for memory management, fragmentation reduction, and query-aware cache selection.
+TinyServe is a serving stack for small language models. During decode it scores KV pages with bounding-box metadata, keeps the newest pages, and runs attention only on that subset. The same selection runs as a C++ kernel and, when CUDA is present, as one fused GPU kernel.
 
-<!-- ## Key Optimizations
+## Architecture Overview
 
-| Optimization | Improvement | Description |
-|-------------|-------------|-------------|
-| Query-Aware Cache Selection | 30-50% throughput | Intelligent cache management based on query characteristics |
-| Fragmentation Reduction | 40-60% reduction | Advanced techniques to minimize memory fragmentation |
-| Best-Fit Allocation | 20-30% space saved | Optimized block allocation strategies |
-| Memory Utilization | >96% (vs 60-80%) | Efficient memory usage with continuous block allocation |
-| FlashAttention Integration | 2-3x speedup | Combined FlashAttention with PagedAttention | -->
+TinyServe has four pieces:
 
-## Core Algorithms
+- **Query-Aware KV Retriever.** Each page stores the per-channel min and max of its keys. The score of page \(j\) is an upper bound on the largest key dot product inside that page.
+- **Page Selector.** A streaming bitonic top-\(K\) picks pages. The newest causal pages are pinned so the token just written cannot be dropped.
+- **Sparse Attention Executor.** The C++ kernel softmaxes the selected tokens. The CUDA kernel fuses scoring, top-\(K\), asynchronous page loads, and online softmax into one launch.
+- **Host Runtime.** A C API plus a Python decoder: exact prefill, query-aware decode, entropy early-exit, int8 or fp16 pages, and session placement across devices.
 
-### Fragmentation Analysis
+\[
+r(q, \phi_j) = \sum_i q_i \cdot
+\begin{cases}
+M_{j,i} & q_i \ge 0 \\
+m_{j,i} & q_i < 0
+\end{cases}
+\]
 
-The fragmentation metric combines spatial and temporal fragmentation:
+## Key Features
 
-$$F_{total} = \alpha \cdot F_{spatial} + \beta \cdot F_{temporal} + \gamma \cdot F_{access}$$
+- Query-aware page selection from bounding-box metadata, with no change to model weights
+- Fused CUDA kernel: page scoring, top-\(K\) selection, and online softmax in one pass
+- Up to 3.4× decode speedup and over 2× KV memory savings in the paper's evaluation
+- Plugin decode loop: entropy early-exit, token pruning, approximate attention, fp16 and int8 pages
 
-where spatial fragmentation is:
+## Project Core Files Structure
 
-$$F_{spatial} = \frac{1}{N} \sum_{i=1}^{N} \left( \frac{r_i - \bar{r}}{\bar{r}} \right)^2 \cdot \exp\left(-\frac{d_i}{\sigma^2}\right)$$
-
-temporal fragmentation considers access patterns:
-
-$$F_{temporal} = \sum_{t=1}^{T} w_t \cdot \left( \frac{\sum_{j=1}^{M} |A_{t,j} - A_{t-1,j}|}{M \cdot \bar{A}} \right)$$
-
-and access-based fragmentation:
-
-$$F_{access} = -\sum_{k=1}^{K} p_k \log_2(p_k) \cdot \frac{\text{Var}(L_k)}{\bar{L}^2}$$
-
-where:
-- $r_i$: size of $i$-th free block run, $\bar{r} = \frac{1}{N}\sum_{i=1}^{N} r_i$
-- $d_i$: distance from optimal location, $\sigma$: spatial decay parameter
-- $A_{t,j}$: access frequency of block $j$ at time $t$, $w_t$: temporal weights
-- $p_k$: probability of accessing cache level $k$, $L_k$: latency distribution
-- $\alpha, \beta, \gamma$: weighting coefficients
-
-### Query-Aware Cache Selection
-
-Multi-objective optimization for cache selection:
-
-$$\arg\max_{c \in \mathcal{C}} \left[ \lambda_1 \cdot U(c|q) - \lambda_2 \cdot C(c) + \lambda_3 \cdot R(c) \right]$$
-
-where utility function:
-
-$$U(c|q) = \frac{\exp(\mathbf{w}^T \phi(q, c))}{\sum_{c' \in \mathcal{C}} \exp(\mathbf{w}^T \phi(q, c'))}$$
-
-with feature vector:
-
-$$\phi(q, c) = \left[ Q_{complexity}(q), A_{frequency}(c), S_{similarity}(q, c), L_{locality}(c) \right]^T$$
-
-cost function:
-
-$$C(c) = \alpha_1 \cdot \text{Size}(c) + \alpha_2 \cdot \text{Load}(c) + \alpha_3 \cdot \text{Latency}(c)$$
-
-and reward function:
-
-$$R(c) = \sum_{i=1}^{n} \gamma^{i-1} \cdot r_i(c) \cdot \mathbb{I}[\text{hit}_i]$$
-
-where:
-- $q$: query, $c$: cache candidate, $\mathcal{C}$: candidate set
-- $\mathbf{w}$: learnable weights, $\lambda_i, \alpha_i$: trade-off parameters
-- $\gamma$: discount factor, $r_i$: reward at step $i$
-
-### Best-Fit Block Allocation
-
-Multi-constraint optimization for block allocation:
-
-$$\min_{b \in \mathcal{B}} \left\lbrace \sum_{i=1}^{m} w_i \cdot f_i(b) + \lambda \cdot \|\mathbf{g}(b)\|_2^2 \right\rbrace$$
-
-subject to constraints:
-
-$$\begin{aligned}
-f_1(b) &= F_{frag}(b) = \frac{\text{Var}(\text{free blocks})}{\bar{r}^2} \\
-f_2(b) &= D_{locality}(b) = \sum_{j \in \text{neighbors}} \frac{1}{d(b, j)^2} \\
-f_3(b) &= S_{size}(b) = \left| \frac{\text{requested} - \text{allocated}}{\text{requested}} \right| \\
-f_4(b) &= T_{access}(b) = \sum_{t} \exp(-\alpha t) \cdot \text{accessCount}_{t}(b)
-\end{aligned}$$
-
-with gradient penalty:
-
-$$\|\mathbf{g}(b)\|_2^2 = \sum_{i=1}^{n} \left( \frac{\partial f_i}{\partial b_i} \right)^2$$
-
-where:
-- $b$: block allocation, $\mathcal{B}$: feasible allocations
-- $w_i$: feature weights, $\lambda$: regularization coefficient
-- $d(b, j)$: distance between blocks, $\alpha$: temporal decay
-
-## Integration Guide
-
-### Modified Files in vLLM
-
-- `csrc/tinyserve_cache_kernels.cu`
-- `csrc/tinyserve_kernels.h`
-- `csrc/cache.h`
-- `csrc/cache_kernels.cu`
-- `csrc/torch_bindings.cpp`
-
-### Step-by-Step Integration
-
-1. **Copy TinyServe files to vLLM:**
-   ```bash
-   cd <vllm_root>
-   cp csrc/tinyserve_cache_kernels.cu csrc/
-   cp csrc/tinyserve_kernels.h csrc/
-   ```
-
-2. **Apply modifications to vLLM files:**
-   - **`csrc/cache.h`**: Add the content from `patches/cache.h.patch` to the end of the file
-   - **`csrc/cache_kernels.cu`**: Add the content from `patches/cache_kernels.cu.patch` to the end of the file
-   - **`csrc/torch_bindings.cpp`**: Add the content from `patches/torch_bindings.cpp.patch` inside the `TORCH_LIBRARY` block (after `cp_gather_indexer_k_quant_cache` registration)
-
-3. **Rebuild vLLM:**
-   ```bash
-   cd <vllm_root>
-   pip install -e . --no-build-isolation
-   ```
-
-**Note**: The patch files contain only the modifications needed. Simply copy the content from each patch file to the corresponding location in the vLLM source code.
-
-## Running Experiments
-
-### Prerequisites
-
-- CUDA 11.8+ and compatible GPU
-- Python 3.8+
-- PyTorch 2.0+
-- vLLM installed with TinyServe modifications
-
-### Basic Usage
-
-After integration, TinyServe optimizations are automatically enabled. The cache operations will use TinyServe's optimized kernels when available.
-
-### Benchmarking
-
-To compare performance with baseline vLLM:
-
-```bash
-# Run baseline vLLM
-python -m vllm.entrypoints.api_server \
-    --model <model_name> \
-    --tensor-parallel-size 1
-
-# Run TinyServe-enhanced vLLM (same command, optimizations are automatic)
-python -m vllm.entrypoints.api_server \
-    --model <model_name> \
-    --tensor-parallel-size 1
+```
+TinyServe/
+├── host/                    # C API, demo, Python serving runtime
+├── selector/                # Bounding-box score and streaming top-K
+├── attention/               # Dense and sparse decode
+├── cache/                   # Incremental page bounds
+├── kernels/                 # CUDA score + select + online softmax
+├── include/                 # C++ headers
+├── tests/                   # C++ kernel tests and Python runtime tests
+└── docs/                    # Architecture and build notes
 ```
 
-### Monitoring Cache Performance
+## Requirements
 
-TinyServe provides enhanced cache metrics. Monitor memory utilization and fragmentation through vLLM's existing monitoring tools. The optimizations work transparently with vLLM's cache management system.
+- Python 3.9+
+- A C++17 compiler
+- CMake 3.16+
+- PyTorch 2.1+ for the Python runtime
+- CUDA, optional, for `kernels/tinyserve_kernels.cu`
 
-### Experimental Setup
+## Installation
 
-For reproducible experiments:
+```bash
+pip install -r requirements.txt
+mkdir build && cd build
+cmake ..
+cmake --build . -j
+```
 
-1. **Environment Setup:**
-   ```bash
-   # Install dependencies
-   pip install -r requirements.txt
-   pip install -e . --no-build-isolation
-   ```
+This creates:
 
-2. **Run Benchmarks:**
-   ```bash
-   # Throughput benchmark
-   python benchmarks/benchmark_throughput.py --model <model_name>
-   
-   # Latency benchmark
-   python benchmarks/benchmark_latency.py --model <model_name>
-   ```
+- `libtinyserve.a`: C++ kernel library
+- `tinyserve_demo`: One decode step over two pages
+- `test_selector` and `test_attention`
 
-3. **Compare Results:**
-   - Memory utilization: Check GPU memory usage with `nvidia-smi`
-   - Throughput: Compare requests/second
-   - Latency: Compare P50/P99 latencies
+If `nvcc` is on `PATH`, CMake also builds `libtinyserve_kernels.a`.
 
-<!-- ## Performance
+## Usage
 
-| Metric | Baseline | TinyServe-vLLM | Improvement |
-|--------|----------|----------------|-------------|
-| Memory Utilization | 60-80% | >96% | +20-36% |
-| Fragmentation | High | Low | -40-60% |
-| Throughput | 1x | 1.3-1.5x | +30-50% |
-| Allocation Efficiency | 70-80% | 90-95% | +20-25% | -->
+### Run Tests
+
+```bash
+cd tests
+make
+make test
+```
+
+`make test` runs the C++ checks and the Python runtime tests. From the build directory, `ctest` runs the C++ checks only.
+
+### Python
+
+From the repository root:
+
+```python
+import torch
+from host.python.tinyserve import TinyServeLM, generate, preset
+
+model = TinyServeLM(preset("debug"))
+prompt = torch.randint(0, model.config.vocab_size, (1, 16))
+result = generate(model, prompt, max_new_tokens=8)
+```
+
+`result.lengths` is the valid length after entropy early-exit. `result.page_hit_rate` is the fraction of selected pages that were also selected on the previous step. Presets such as `gpt2-345m` set layer widths only. They are not pretrained checkpoints.
+
+### C API
+
+```c
+#include "tinyserve.h"
+
+tinyserve_bounding_box_score(query, k_min, k_max, dim, &score);
+tinyserve_sparse_decode(query, &kv, k_pages, n_recent, scale, position, out, selected);
+```
+
+`./tinyserve_demo` prints the page scores, the pinned page, and the attention output for a fixed two-page cache.
+
+## Technical Documentation
+
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) describes the page layout, the selector, and the fused kernel.
+- [docs/BUILD.md](docs/BUILD.md) covers the CMake build and the optional CUDA library.
 
 ## Citation
 
 ```bibtex
 @inproceedings{liu_tinyserve_2025,
-   author = {Liu, Dong and Yu, Yanxuan},
-   title = {TinyServe: Query-Aware Cache Selection for Efficient LLM Serving},
-   year = {2025},
-   isbn = {9798400720352},
-   publisher = {Association for Computing Machinery},
-   address = {New York, NY, USA},
-   url = {https://doi.org/10.1145/3746027.3758181},
-   doi = {10.1145/3746027.3758181},
-   abstract = {Serving large language models (LLMs) efficiently remains challenging due to the high memory and latency overhead of key-value (KV) cache access during autoregressive decoding. We present TinyServe, a lightweight and extensible serving system for deploying tiny LLMs (e.g., TinyLLaMA, GPT2-345M) with support for structured KV sparsity, plugin-based token selection, and hardware-efficient attention kernels. Unlike prior simulation frameworks, TinyServe executes real-time decoding with configurable sparsity strategies and fine-grained instrumentation. To reduce decoding cost, we introduce a query-aware page selection mechanism that leverages bounding-box metadata to estimate attention relevance between the query and KV cache blocks. This enables selective KV loading with minimal overhead and no model modifications. Our fused CUDA kernel integrates page scoring, sparse memory access, and masked attention in a single pass. Experiments show that TinyServe achieves up to 3.4\texttimes{} speedup and over 2\texttimes{} memory savings with negligible accuracy drop. Additional analysis of cache reuse, page hit rate, and multi-GPU scaling confirms its practicality as an efficient system-level design for LLM training and inference research on resource-constrained hardware.},
-   booktitle = {Proceedings of the 33rd ACM International Conference on Multimedia},
-   pages = {12529–12537},
-   numpages = {9},
-   keywords = {cuda kernels, efficient inference, efficient training, kv cache, llm serving, runtime systems, sparsity},
-   location = {Dublin, Ireland},
-   series = {MM '25}
+  author = {Liu, Dong and Yu, Yanxuan},
+  title = {TinyServe: Query-Aware Cache Selection for Efficient LLM Serving},
+  year = {2025},
+  isbn = {9798400720352},
+  publisher = {Association for Computing Machinery},
+  address = {New York, NY, USA},
+  url = {https://doi.org/10.1145/3746027.3758181},
+  doi = {10.1145/3746027.3758181},
+  abstract = {Serving large language models (LLMs) efficiently remains challenging due to the high memory and latency overhead of key-value (KV) cache access during autoregressive decoding. We present TinyServe, a lightweight and extensible serving system for deploying tiny LLMs (e.g., TinyLLaMA, GPT2-345M) with support for structured KV sparsity, plugin-based token selection, and hardware-efficient attention kernels. Unlike prior simulation frameworks, TinyServe executes real-time decoding with configurable sparsity strategies and fine-grained instrumentation. To reduce decoding cost, we introduce a query-aware page selection mechanism that leverages bounding-box metadata to estimate attention relevance between the query and KV cache blocks. This enables selective KV loading with minimal overhead and no model modifications. Our fused CUDA kernel integrates page scoring, sparse memory access, and masked attention in a single pass. Experiments show that TinyServe achieves up to 3.4\times speedup and over 2\times memory savings with negligible accuracy drop. Additional analysis of cache reuse, page hit rate, and multi-GPU scaling confirms its practicality as an efficient system-level design for LLM training and inference research on resource-constrained hardware.},
+  booktitle = {Proceedings of the 33rd ACM International Conference on Multimedia},
+  pages = {12529--12537},
+  numpages = {9},
+  keywords = {cuda kernels, efficient inference, efficient training, kv cache, llm serving, runtime systems, sparsity},
+  location = {Dublin, Ireland},
+  series = {MM '25}
 }
 ```
 
 ## About
 
 Developed by [Dong Liu](https://github.com/NoakLiu/) and [Yanxuan Yu](https://github.com/zorinayu/) at [FastLM.ai](https://github.com/FastLM/)
+
