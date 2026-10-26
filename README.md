@@ -6,18 +6,18 @@ TinyServe is a serving stack for small language models. During decode it scores 
 
 TinyServe has four pieces:
 
-- **Query-Aware KV Retriever.** Each page stores the per-channel min and max of its keys. The score of page \(j\) is an upper bound on the largest key dot product inside that page.
-- **Page Selector.** A streaming bitonic top-\(K\) picks pages. The newest causal pages are pinned so the token just written cannot be dropped.
-- **Sparse Attention Executor.** The C++ kernel softmaxes the selected tokens. The CUDA kernel fuses scoring, top-\(K\), asynchronous page loads, and online softmax into one launch.
+- **Query-Aware KV Retriever.** Each page stores the per-channel min and max of its keys. The score of page $j$ is an upper bound on the largest key dot product inside that page.
+- **Page Selector.** A streaming bitonic top-$K$ picks pages. The newest causal pages are pinned so the token just written cannot be dropped.
+- **Sparse Attention Executor.** The C++ kernel softmaxes the selected tokens. The CUDA kernel fuses scoring, top-$K$, asynchronous page loads, and online softmax into one launch.
 - **Host Runtime.** A C API plus a Python decoder: exact prefill, query-aware decode, entropy early-exit, int8 or fp16 pages, and session placement across devices.
 
-\[
+$$
 r(q, \phi_j) = \sum_i q_i \cdot
 \begin{cases}
 M_{j,i} & q_i \ge 0 \\
 m_{j,i} & q_i < 0
 \end{cases}
-\]
+$$
 
 ## Key Features
 
@@ -25,6 +25,16 @@ m_{j,i} & q_i < 0
 - Fused CUDA kernel: page scoring, top-\(K\) selection, and online softmax in one pass
 - Up to 3.4× decode speedup and over 2× KV memory savings in the paper's evaluation
 - Plugin decode loop: entropy early-exit, token pruning, approximate attention, fp16 and int8 pages
+
+## Memory
+
+With cache length $L$, page size $S$, $K$ selected pages, reuse probability $\rho$, and $M$ bytes per token:
+
+$$
+\mathrm{Load} = 2M \left(\frac{L}{S} + \rho K S\right), \qquad \mathrm{fraction} = \frac{1}{S} + \rho \frac{K S}{L}.
+$$
+
+The page size $\sqrt{L/K}$ is the operating point stated in the paper. The page size that minimizes the fraction is $\sqrt{L/(\rho K)}$.
 
 ## Project Core Files Structure
 
